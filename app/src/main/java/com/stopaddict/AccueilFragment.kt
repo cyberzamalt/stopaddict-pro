@@ -226,6 +226,10 @@ class AccueilFragment : Fragment() {
             val tradReglages = ReglagesLangues.getTraductions(configLangue.getLangue())
             btnPremiumAccueil.text = tradReglages["btn_premium"] ?: "Version sans publicité"
 
+            // ✅ Afficher le bouton "Premium" uniquement en version GRATUITE
+            val isVersionGratuite = (activity as? MainActivity)?.isVersionGratuite ?: true
+            btnPremiumAccueil.visibility = if (isVersionGratuite) View.VISIBLE else View.GONE
+
             // Ajout des icônes (emoji) comme dans le header et Stats – sans impacter la traduction
             checkCigarettes.text   = "🚬 " + (trad["label_cigarettes"] ?: "Cigarettes")
             checkJoints.text       = "🌿 " + (trad["label_joints"] ?: "Joints")
