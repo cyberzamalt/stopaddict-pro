@@ -1268,9 +1268,10 @@ class ReglagesFragment : Fragment() {
     }
 
     // Lien 5: Version sans publicité
-    addLinkButton(aProposCard, "🪙 ${trad["btn_premium"] ?: "Version sans publicité"}") {
-        ouvrirVersionPremium()
-    }
+    // (désactivé / caché en version free)
+    // addLinkButton(aProposCard, "🪙 ${trad["btn_premium"] ?: "Version sans publicité"}") {
+    //     ouvrirVersionPremium()
+    // }
 
     // Lien 6: Dernières mises à jour
     addLinkButton(aProposCard, "🛠️ ${trad["btn_maj"] ?: "Dernières mises à jour"}") {
