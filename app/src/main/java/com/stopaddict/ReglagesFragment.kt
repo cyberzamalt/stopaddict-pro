@@ -1712,58 +1712,36 @@ class ReglagesFragment : Fragment() {
         return export.toString(2)
     }
 
-    @Suppress("DEPRECATION")
-   private fun importData() {
-       try {
-           // 1) Gestion des limitations (si tu veux les garder)
-           if (!exportLimiter.peutImporter()) {
-   
-               // Import totalement désactivé (free)
-               if (exportLimiter.importDesactive()) {
-                   val msg = trad["msg_export_limite"]
-                       ?: "Pour accéder à l'importation, passez à la version sans publicité pour en profiter."
-                   Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
-                   return
-               }
-   
-               // Import limité (quota)
-               val remaining = exportLimiter.getRemainingImports()
-               val template = trad["msg_import_limite"]
-                   ?: "Limite atteinte. %d import(s) restant(s) aujourd'hui."
-               Toast.makeText(requireContext(), String.format(template, remaining), Toast.LENGTH_LONG).show()
-               return
-           }
-   
-           // 2) Ouvrir le sélecteur de fichier
-           val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-               addCategory(Intent.CATEGORY_OPENABLE)
-               type = "application/json"
-           }
-   
-           // (Optionnel) éviter crash si aucun gestionnaire
-           if (intent.resolveActivity(requireContext().packageManager) == null) {
-               Toast.makeText(
-                   requireContext(),
-                   trad["msg_open_file_impossible"] ?: "Impossible d'ouvrir le sélecteur de fichiers.",
-                   Toast.LENGTH_LONG
-               ).show()
-               return
-           }
-   
-           startActivityForResult(intent, REQUEST_CODE_IMPORT)
-   
-           // ⚠️ IMPORTANT : on NE FAIT PAS exportLimiter.enregistrerImport() ici
-           // -> on le fera uniquement après un import réellement réussi dans onActivityResult
-   
-       } catch (e: Exception) {
-           logger.e("Erreur import", e)
-           Toast.makeText(
-               requireContext(),
-               String.format(trad["msg_erreur_prefix"] ?: "Erreur : %s", e.message ?: ""),
-               Toast.LENGTH_SHORT
-           ).show()
-       }
-   }
+  @Suppress("DEPRECATION")
+private fun importData() {
+    try {
+        // Ouvrir le sélecteur de fichier (JSON)
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/json"
+        }
+
+        // Éviter crash si aucun gestionnaire
+        if (intent.resolveActivity(requireContext().packageManager) == null) {
+            Toast.makeText(
+                requireContext(),
+                trad["msg_open_file_impossible"] ?: "Impossible d'ouvrir le sélecteur de fichiers.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
+        startActivityForResult(intent, REQUEST_CODE_IMPORT)
+
+    } catch (e: Exception) {
+        logger.e("Erreur import", e)
+        Toast.makeText(
+            requireContext(),
+            String.format(trad["msg_erreur_prefix"] ?: "Erreur : %s", e.message ?: ""),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+}
 
     @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
