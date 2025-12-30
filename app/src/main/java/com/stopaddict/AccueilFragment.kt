@@ -139,9 +139,6 @@ class AccueilFragment : Fragment() {
 
             // Initialisation des vues
             initViews(view)
-            
-            val isVersionGratuite = (activity as? MainActivity)?.isVersionGratuite ?: true
-            btnPremiumAccueil.visibility = if (isVersionGratuite) View.VISIBLE else View.GONE
 
             // Chargement catégories actives
             loadCategoriesActives()
@@ -228,10 +225,6 @@ class AccueilFragment : Fragment() {
             btnPremiumAccueil = view.findViewById(R.id.accueil_btn_premium)
             val tradReglages = ReglagesLangues.getTraductions(configLangue.getLangue())
             btnPremiumAccueil.text = tradReglages["btn_premium"] ?: "Version sans publicité"
-
-            // ✅ Afficher le bouton "Premium" uniquement en version GRATUITE
-            val isVersionGratuite = (activity as? MainActivity)?.isVersionGratuite ?: true
-            btnPremiumAccueil.visibility = if (isVersionGratuite) View.VISIBLE else View.GONE
 
             // Ajout des icônes (emoji) comme dans le header et Stats – sans impacter la traduction
             checkCigarettes.text   = "🚬 " + (trad["label_cigarettes"] ?: "Cigarettes")
