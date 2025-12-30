@@ -1,0 +1,513 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+                <!-- Bandeau profil (progression) -->
+        <LinearLayout
+            android:id="@+id/habitudes_bandeau_profil"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"
+             android:background="@android:drawable/dialog_holo_light_frame">
+
+            <TextView
+                android:id="@+id/habitudes_profil_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:drawablePadding="8dp"
+                android:paddingBottom="8dp" />
+
+            <ProgressBar
+                android:id="@+id/habitudes_profil_progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/profil_progress_drawable"
+                android:splitTrack="false"/>
+
+            <TextView
+                android:id="@+id/habitudes_txt_profil_restant"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:textSize="12sp"
+                android:paddingTop="6dp" />
+
+        </LinearLayout>
+
+        <!-- Zone Habitudes -->
+
+        <TextView
+            android:id="@+id/habitudes_txt_titre_habitudes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+        
+        <LinearLayout
+            android:id="@+id/habitudes_container_habitudes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_white_blue"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <!-- Max Cigarettes -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_input_white_blue"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:layout_marginBottom="8dp">
+            
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="🚬"
+                    android:textSize="18sp" />
+            
+                <EditText
+                    android:id="@+id/habitudes_input_max_cigarettes"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:inputType="number"
+                    android:imeOptions="actionNext"
+                    android:paddingLeft="8dp"
+                    android:textSize="14sp"
+                    android:textColor="#000000"
+                    android:textColorHint="#666666"/>
+            </LinearLayout>
+            
+            <RadioGroup
+            android:id="@+id/habitudes_period_cigarettes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp"
+            android:layout_marginTop="6dp">
+        
+            <RadioButton
+                android:id="@+id/habitudes_cigarettes_jour"
+                android:text="@string/periode_jour" />
+        
+            <RadioButton
+                android:id="@+id/habitudes_cigarettes_semaine"
+                android:text="@string/periode_semaine" />
+        
+            <RadioButton
+                android:id="@+id/habitudes_cigarettes_mois"
+                android:text="@string/periode_mois" />
+        </RadioGroup>
+
+
+            <!-- Max Joints -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_input_white_blue"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:layout_marginBottom="8dp">
+            
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="🌿"
+                    android:textSize="18sp" />
+            
+                <EditText
+                    android:id="@+id/habitudes_input_max_joints"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:inputType="number"
+                    android:imeOptions="actionNext"
+                    android:paddingLeft="8dp"
+                    android:textSize="14sp"
+                    android:textColor="#000000"
+                    android:textColorHint="#666666"/>
+            </LinearLayout>
+
+                <RadioGroup
+                    android:id="@+id/habitudes_period_joints"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp"
+                    android:layout_marginTop="6dp">
+            
+                <RadioButton
+                    android:id="@+id/habitudes_joints_jour"
+                    android:text="@string/periode_jour" />
+            
+                <RadioButton
+                    android:id="@+id/habitudes_joints_semaine"
+                    android:text="@string/periode_semaine" />
+            
+                <RadioButton
+                    android:id="@+id/habitudes_joints_mois"
+                    android:text="@string/periode_mois" />
+            </RadioGroup>
+
+            <LinearLayout
+                android:id="@+id/habitudes_block_alcool_global"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+            <!-- Max Alcool Global -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_input_white_blue"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:layout_marginBottom="8dp">
+            
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="🥃"
+                    android:textSize="18sp" />
+            
+                <EditText
+                    android:id="@+id/habitudes_input_max_alcool_global"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:inputType="number"
+                    android:imeOptions="actionNext"
+                    android:paddingLeft="8dp"
+                    android:textSize="14sp"
+                    android:textColor="#000000"
+                    android:textColorHint="#666666"/>
+            </LinearLayout>
+
+            <RadioGroup
+                android:id="@+id/habitudes_period_alcool_global"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp"
+                android:layout_marginTop="6dp">
+        
+            <RadioButton
+                android:id="@+id/habitudes_alcool_global_jour"
+                android:text="@string/periode_jour" />
+        
+            <RadioButton
+                android:id="@+id/habitudes_alcool_global_semaine"
+                android:text="@string/periode_semaine" />
+        
+            <RadioButton
+                android:id="@+id/habitudes_alcool_global_mois"
+                android:text="@string/periode_mois" />
+        </RadioGroup>
+</LinearLayout>
+
+            <LinearLayout
+    android:id="@+id/habitudes_block_bieres"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+                
+            <!-- Max Bières -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_input_white_blue"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:layout_marginBottom="8dp">
+            
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="🍺"
+                    android:textSize="18sp" />
+            
+                <EditText
+                    android:id="@+id/habitudes_input_max_bieres"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:inputType="number"
+                    android:imeOptions="actionNext"
+                    android:paddingLeft="8dp"
+                    android:textSize="14sp"
+                    android:textColor="#000000"
+                    android:textColorHint="#666666"/>
+            </LinearLayout>
+
+                <RadioGroup
+                    android:id="@+id/habitudes_period_bieres"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp"
+                    android:layout_marginTop="6dp">
+                
+                <RadioButton
+                    android:id="@+id/habitudes_bieres_jour"
+                    android:text="@string/periode_jour" />
+            
+                <RadioButton
+                    android:id="@+id/habitudes_bieres_semaine"
+                    android:text="@string/periode_semaine" />
+            
+                <RadioButton
+                    android:id="@+id/habitudes_bieres_mois"
+                    android:text="@string/periode_mois" />
+            </RadioGroup>
+    </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/habitudes_block_liqueurs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                            
+            <!-- Max Liqueurs -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_input_white_blue"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:layout_marginBottom="8dp">
+            
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="🍸"
+                    android:textSize="18sp" />
+            
+                <EditText
+                    android:id="@+id/habitudes_input_max_liqueurs"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:inputType="number"
+                    android:imeOptions="actionNext"
+                    android:paddingLeft="8dp"
+                    android:textSize="14sp"
+                    android:textColor="#000000"
+                    android:textColorHint="#666666"/>
+            </LinearLayout>
+
+            <RadioGroup
+                android:id="@+id/habitudes_period_liqueurs"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp"
+                android:layout_marginTop="6dp">
+        
+            <RadioButton
+                android:id="@+id/habitudes_liqueurs_jour"
+                android:text="@string/periode_jour" />
+        
+            <RadioButton
+                android:id="@+id/habitudes_liqueurs_semaine"
+                android:text="@string/periode_semaine" />
+        
+            <RadioButton
+                android:id="@+id/habitudes_liqueurs_mois"
+                android:text="@string/periode_mois" />
+        </RadioGroup>
+</LinearLayout>
+    <LinearLayout
+        android:id="@+id/habitudes_block_alcool_fort"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+        
+            <!-- Max Alcool Fort -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_input_white_blue"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:layout_marginBottom="12dp">
+            
+                <TextView
+                    android:layout_width="28dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="🥃"
+                    android:textSize="18sp" />
+            
+                <EditText
+                    android:id="@+id/habitudes_input_max_alcool_fort"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:inputType="number"
+                    android:imeOptions="actionNext"
+                    android:paddingLeft="8dp"
+                    android:textSize="14sp"
+                    android:textColor="#000000"
+                    android:textColorHint="#666666"/>
+            </LinearLayout>
+                        
+            <RadioGroup
+                android:id="@+id/habitudes_period_alcool_fort"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="0dp"
+                android:layout_marginTop="6dp">
+        
+            <RadioButton
+                android:id="@+id/habitudes_alcool_fort_jour"
+                android:text="@string/periode_jour" />
+        
+            <RadioButton
+                android:id="@+id/habitudes_alcool_fort_semaine"
+                android:text="@string/periode_semaine" />
+        
+            <RadioButton
+                android:id="@+id/habitudes_alcool_fort_mois"
+                android:text="@string/periode_mois" />
+        </RadioGroup>
+
+        </LinearLayout>
+</LinearLayout>
+        
+        <!-- Boutons Habitudes (uniquement) -->
+<LinearLayout
+    android:id="@+id/habitudes_buttons_habitudes_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="end"
+    android:paddingTop="0dp"
+    android:paddingBottom="16dp">
+
+    <Button
+        android:id="@+id/habitudes_btn_effacer_habitudes"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:layout_marginEnd="8dp"
+        android:textColor="@android:color/white"
+        android:textAllCaps="false"
+        android:background="@drawable/btn_red"
+        android:backgroundTint="@null"
+        app:backgroundTint="@null"
+        android:elevation="2dp"/>
+
+    <Button
+        android:id="@+id/habitudes_btn_sauvegarder_habitudes"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:layout_weight="1"
+        android:textColor="@android:color/white"
+        android:textAllCaps="false"
+        android:background="@drawable/btn_green"
+        android:backgroundTint="@null"
+        app:backgroundTint="@null"
+        android:elevation="2dp"/>
+
+</LinearLayout>
+
+        <!-- Zone Volonté (construite dynamiquement dans le code) -->
+        <TextView
+            android:id="@+id/habitudes_txt_titre_volonte"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+        
+        <LinearLayout
+            android:id="@+id/habitudes_container_volonte"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_white_blue"
+            android:padding="16dp" />
+
+        <!-- Boutons Dates (uniquement) -->
+<LinearLayout
+    android:id="@+id/habitudes_buttons_dates_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="end"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp">
+
+    <Button
+    android:id="@+id/habitudes_btn_effacer_dates"
+    android:layout_width="0dp"
+    android:layout_height="48dp"
+    android:layout_weight="1"
+    android:layout_marginEnd="8dp"
+    android:textColor="@android:color/white"
+    android:textAllCaps="false"
+    android:background="@drawable/btn_red"
+    android:backgroundTint="@null"
+    app:backgroundTint="@null"
+    android:elevation="2dp"/>
+
+<Button
+    android:id="@+id/habitudes_btn_sauvegarder_dates"
+    android:layout_width="0dp"
+    android:layout_height="48dp"
+    android:layout_weight="1"
+    android:textColor="@android:color/white"
+    android:textAllCaps="false"
+    android:background="@drawable/btn_green"
+    android:backgroundTint="@null"
+    app:backgroundTint="@null"
+    android:elevation="2dp"/>
+
+</LinearLayout>
+        
+    </LinearLayout>
+</ScrollView>

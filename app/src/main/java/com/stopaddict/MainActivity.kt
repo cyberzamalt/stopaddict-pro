@@ -1,0 +1,914 @@
+package com.stopaddict
+
+import android.content.Intent
+import android.graphics.Color
+import android.net.Uri
+import android.os.Bundle
+import android.view.Gravity
+import android.view.View
+import android.view.WindowManager
+import android.widget.*
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
+import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
+import java.text.SimpleDateFormat
+import java.util.*
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
+import org.json.JSONObject
+import com.google.android.gms.ads.MobileAds
+
+
+class MainActivity : AppCompatActivity() {
+
+    companion object {
+    private const val PREFS_NAME = "StopAddict"
+    private const val PREF_WARNING_SHOWN = "warning_majorite_shown"
+    private const val PREF_AGE_ACCEPTED = "age_18_accepted"
+
+    // Nouveau : date de dernière vérification + intervalle (30 jours)
+    private const val PREF_LAST_AGE_CHECK = "last_age_check_timestamp"
+    private const val AGE_CHECK_INTERVAL_DAYS = 30L
+    private const val PREF_WELCOME_DISABLED = "welcome_disabled"
+}
+    
+    private val logger = AppLogger("MainActivity")
+
+        private lateinit var headerRoot: LinearLayout
+        private lateinit var headerTextView: TextView
+        private lateinit var tabLayout: TabLayout
+        private lateinit var viewPager: ViewPager2
+        private lateinit var adContainer: FrameLayout
+        private lateinit var adView: AdView
+        private lateinit var configLangue: ConfigLangue
+        private lateinit var dbHelper: DatabaseHelper
+        private lateinit var trad: Map<String, String>
+
+        // Bandeau résumé jour sous le header principal
+    private lateinit var headerResumeScroll: HorizontalScrollView
+    private lateinit var headerResumeContainer: LinearLayout
+    private lateinit var headerResumeLabel: TextView
+    private lateinit var headerResumeCigarette: TextView
+    private lateinit var headerResumeJoint: TextView
+    private lateinit var headerResumeAlcoolGlobal: TextView
+    private lateinit var headerResumeBiere: TextView
+    private lateinit var headerResumeLiqueur: TextView
+    private lateinit var headerResumeAlcoolFort: TextView
+    
+    private var consoleClickCount = 0
+    private var lastConsoleClickTime = 0L
+    private var consoleVisible = false
+    private var consoleDialog: AlertDialog? = null
+    private val isVersionGratuite = true
+
+    private var welcomeShownThisSession = false
+    private val PREF_WELCOME_DISABLED = "welcome_disabled" // même clé que dans ReglagesFragment
+
+    // Cache : dernier jour pour lequel le bandeau a été calculé
+    private var headerResumeLastDay: String? = null
+
+    // Cache : dernière config de catégories actives utilisée pour calculer le bandeau
+    private var headerResumeLastCategoriesJson: String? = null
+
+    // Cache bandeau "Jour" (évite de recharger les traductions à chaque update)
+    private var headerTradStatsCache: Map<String, String>? = null
+    private var headerLabelJourCache: String? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        logger.d("MainActivity onCreate")
+        
+        try {
+            configLangue = ConfigLangue(this)
+            configLangue.initialiserLangue()
+            trad = MainActivityLangues.getTraductions(configLangue.getLangue())
+            
+            setContentView(R.layout.activity_main)
+            
+            dbHelper = DatabaseHelper(this)
+            
+            initializeViews()
+            setupHeader()
+            
+            if (!checkAgeWarningStatus()) {
+                showAgeWarningDialog()
+            } else {
+                initializeMainContent()
+                showWelcomeDialogIfNeeded()
+            }
+            
+        } catch (e: Exception) {
+            logger.e("ERREUR onCreate", e)
+            Toast.makeText(this, "Erreur: ${e.message}", Toast.LENGTH_LONG).show()
+            finish()
+        }
+    }
+    
+        private fun initializeViews() {
+        headerRoot = findViewById(R.id.main_header_root)
+        headerTextView = findViewById(R.id.main_header_title)
+        tabLayout = findViewById(R.id.main_tab_layout)
+        viewPager = findViewById(R.id.main_view_pager)
+        adContainer = findViewById(R.id.main_ad_container)
+
+        headerResumeScroll = findViewById(R.id.header_resume_scroll)
+        headerResumeContainer = findViewById(R.id.header_resume_container)
+        headerResumeLabel = findViewById(R.id.header_resume_label)
+        headerResumeCigarette = findViewById(R.id.header_resume_cigarette)
+        headerResumeJoint = findViewById(R.id.header_resume_joint)
+        headerResumeAlcoolGlobal = findViewById(R.id.header_resume_alcool_global)
+        headerResumeBiere = findViewById(R.id.header_resume_biere)
+        headerResumeLiqueur = findViewById(R.id.header_resume_liqueur)
+        headerResumeAlcoolFort = findViewById(R.id.header_resume_alcool_fort)
+
+        // Caché par défaut, on l’affichera seulement sur Stats & Calendrier
+        headerResumeScroll.visibility = View.GONE
+
+        logger.d(
+            "initializeViews: headerRoot=$headerRoot, headerTextView=$headerTextView, " +
+                "tabLayout=$tabLayout, viewPager=$viewPager, adContainer=$adContainer"
+        )
+    }
+
+           private fun setupHeader() {
+    logger.d("setupHeader: called")
+
+    updateDateTime()
+
+    // Toute la barre (icône + textes) est cliquable
+    headerRoot.setOnClickListener {
+        logger.d("setupHeader: header root clicked -> opening console debug")
+        handleConsoleDebugClick()
+    }
+
+    logger.d("setupHeader: header click listener initialized (root)")
+}
+
+private fun updateDateTime() {
+    try {
+        val now = Date()
+        val dateFormat = SimpleDateFormat("EEEE dd MMMM yyyy", Locale.getDefault())
+        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+
+        val datePart = dateFormat.format(now)
+        val timePart = timeFormat.format(now)
+
+        // 3 lignes : nom app / date / heure
+        headerTextView.text = "Stop Addict\n$datePart\n$timePart"
+
+        logger.d("updateDateTime: header updated with \"$datePart - $timePart\"")
+    } catch (e: Exception) {
+        headerTextView.text = "Stop Addict"
+        logger.e("updateDateTime: erreur format date/heure, fallback appliqué", e)
+    }
+}
+    
+    private fun checkAgeWarningStatus(): Boolean {
+    val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+    val warningShown = prefs.getBoolean(PREF_WARNING_SHOWN, false)
+    val ageAccepted = prefs.getBoolean(PREF_AGE_ACCEPTED, false)
+    val lastCheck = prefs.getLong(PREF_LAST_AGE_CHECK, 0L)
+
+    val now = System.currentTimeMillis()
+    val thirtyDaysMs = AGE_CHECK_INTERVAL_DAYS * 24L * 60L * 60L * 1000L
+    val intervalExceeded = (now - lastCheck) >= thirtyDaysMs
+
+    // Résultat : on considère la vérif comme "OK" seulement si :
+    // - avertissement déjà affiché une fois,
+    // - âge accepté,
+    // - ET 30 jours PAS encore dépassés
+    val result = warningShown && ageAccepted && !intervalExceeded
+
+    logger.d(
+        "checkAgeWarningStatus: warningShown=$warningShown, " +
+            "ageAccepted=$ageAccepted, lastCheck=$lastCheck, " +
+            "intervalExceeded=$intervalExceeded, result=$result"
+    )
+
+    return result
+}
+    
+    fun showAgeWarningDialog(fromSettings: Boolean = false) {
+    logger.d("showAgeWarningDialog: ouverture du pop-up d’avertissement majeurité...")
+
+    try {
+        // Conteneur principal vertical
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 40, 40, 20)
+        }
+        logger.d("showAgeWarningDialog: container initialisé")
+
+        // Titre
+        val titleText = TextView(this).apply {
+            text = trad["warning_title"] ?: ""
+            textSize = 18f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(0, 0, 0, 20)
+            gravity = Gravity.CENTER
+        }
+        container.addView(titleText)
+        logger.d("showAgeWarningDialog: titre ajouté")
+
+        // Message principal (long)
+        val messageText = TextView(this).apply {
+            text = trad["warning_message"] ?: ""
+            textSize = 14f
+            setPadding(0, 0, 0, 20)
+        }
+        container.addView(messageText)
+        logger.d("showAgeWarningDialog: message principal ajouté")
+
+        // Lien "Ressources et numéros utiles"
+        val linkText = TextView(this).apply {
+            text = trad["warning_resources_link"] ?: ""
+            textSize = 14f
+            setTextColor(getColor(android.R.color.holo_blue_dark))
+            setPadding(0, 0, 0, 30)
+            setOnClickListener {
+                logger.d("showAgeWarningDialog: clic sur 'ressources utiles'")
+                showRessourcesUtiles()
+            }
+        }
+        container.addView(linkText)
+        logger.d("showAgeWarningDialog: lien ressources utiles ajouté")
+
+        // --- Cases à cocher ---
+        val checkboxAge = CheckBox(this).apply {
+            text = trad["warning_checkbox_age"] ?: ""
+            textSize = 15f
+            setPadding(0, 10, 0, 10)
+        }
+        container.addView(checkboxAge)
+        logger.d("showAgeWarningDialog: checkbox majeur(e) ajouté")
+
+        val checkboxNoShow = CheckBox(this).apply {
+            text = trad["warning_checkbox_noshow"] ?: ""
+            setPadding(0, 10, 0, 20)
+        }
+        container.addView(checkboxNoShow)
+
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+
+        // On NE pré-coche PAS "je suis majeur(e)" : il doit être vide à chaque fois
+        checkboxAge.isChecked = false
+
+        // On garde le lien avec le réglage "ne plus afficher" (Réglages)
+        val warningShown = prefs.getBoolean(PREF_WARNING_SHOWN, false)
+        checkboxNoShow.isChecked = warningShown
+
+        logger.d(
+            "showAgeWarningDialog: états initiaux -> " +
+                "ageChecked=${checkboxAge.isChecked}, noShowChecked=${checkboxNoShow.isChecked}"
+        )
+
+        // --- ScrollView autour du container pour éviter que ça déborde ---
+        val scrollView = ScrollView(this).apply {
+            isFillViewport = true
+            addView(container)
+        }
+
+        val builder = AlertDialog.Builder(this)
+            .setView(scrollView)
+            .setNegativeButton(trad["warning_btn_quit"] ?: "Quit") { _, _ ->
+                logger.d("showAgeWarningDialog: utilisateur a cliqué 'Quitter'")
+                finish()
+            }
+            .setPositiveButton(trad["warning_btn_accept"] ?: "Accept", null)
+            .setCancelable(false)
+
+        val dialog = builder.create()
+
+        dialog.setOnShowListener {
+            logger.d("showAgeWarningDialog: dialog affiché, configuration des boutons...")
+
+            val positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            positiveButton.isEnabled = checkboxAge.isChecked
+
+            checkboxAge.setOnCheckedChangeListener { _, isChecked ->
+                logger.d("showAgeWarningDialog: checkbox âge -> $isChecked")
+                positiveButton.isEnabled = isChecked
+            }
+
+            positiveButton.setOnClickListener {
+                logger.d("showAgeWarningDialog: bouton 'Accepter' cliqué")
+
+                if (checkboxAge.isChecked) {
+                    val now = System.currentTimeMillis()
+
+                    prefs.edit().apply {
+                        // L’utilisateur confirme qu’il est majeur
+                        putBoolean(PREF_AGE_ACCEPTED, true)
+
+                        // On mémorise son choix sur "ne plus afficher"
+                        putBoolean(PREF_WARNING_SHOWN, checkboxNoShow.isChecked)
+
+                        // On enregistre la date de cette vérification
+                        putLong(PREF_LAST_AGE_CHECK, now)
+                        apply()
+                    }
+
+                    logger.d("showAgeWarningDialog: préférences sauvegardées, fermeture dialog")
+
+                    dialog.dismiss()
+
+                    // Si affiché depuis Réglages → NE PAS renvoyer à l'accueil
+                    if (!fromSettings) {
+                        initializeMainContent()
+                        showWelcomeDialogIfNeeded()
+                    }
+                } else {
+                    logger.d(
+                        "showAgeWarningDialog: bouton 'Accepter' cliqué " +
+                            "mais case majeur non cochée"
+                    )
+                }
+            }
+        }
+
+        dialog.show()
+        logger.d("showAgeWarningDialog: dialog.show() exécuté")
+
+        // Optionnel : garantit que le pop-up ne dépasse pas l'écran en hauteur
+        dialog.window?.setLayout(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT
+        )
+
+    } catch (e: Exception) {
+        logger.e("showAgeWarningDialog: erreur affichage avertissement", e)
+    }
+}
+    
+private fun showRessourcesUtiles() {
+    logger.d("showRessourcesUtiles: ouverture de la popup ressources utiles...")
+    try {
+                val tv = TextView(this).apply {
+            text = trad["resources_content"] ?: ""
+            textSize = 14f
+            setPadding(50, 30, 50, 30)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(trad["resources_title"] ?: "Help")
+            .setView(tv)
+            .setPositiveButton(trad["resources_btn_close"] ?: "Close") { _, _ ->
+                logger.d("showRessourcesUtiles: bouton Fermer cliqué")
+            }
+            .show()
+        logger.d("showRessourcesUtiles: dialog affiché avec succès")
+    } catch (e: Exception) {
+        logger.e("showRessourcesUtiles: erreur affichage ressources", e)
+    }
+}
+
+private fun showWelcomeDialogIfNeeded() {
+    try {
+        // 1) Anti double-affichage dans la même session (même lancement de l’app)
+        if (welcomeShownThisSession) {
+            logger.d("Welcome: déjà affiché dans cette session -> skip")
+            return
+        }
+
+        // 2) Respect du réglage utilisateur (case "Désactiver l'encouragement")
+        // IMPORTANT : tu stockes ça via dbHelper.setPreference(...) dans ReglagesFragment
+        val disabled = dbHelper.getPreference(PREF_WELCOME_DISABLED, "0") == "1"
+        if (disabled) {
+            logger.d("Welcome: désactivé via réglages -> skip")
+            return
+        }
+
+        // 3) Marquer comme affiché AVANT d’afficher (sécurité anti double trigger)
+        welcomeShownThisSession = true
+
+        // 4) Afficher ton pop-up d’encouragement (garde TON implémentation actuelle)
+        // Exemple : showWelcomeDialog() / showEncouragementDialog() selon ton nom réel.
+        showWelcomeDialog()
+
+    } catch (e: Exception) {
+        logger.e("Erreur showWelcomeDialogIfNeeded", e)
+    }
+}
+
+private fun showWelcomeDialog() {
+    val wTrad = WelcomeLangues.getTraductions(configLangue.getLangue())
+
+    val container = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(40, 35, 40, 15)
+    }
+
+    val message = TextView(this).apply {
+        val messages = WelcomeLangues.getMessages(configLangue.getLangue())
+        text = if (messages.isNotEmpty()) messages.random() else (wTrad["welcome_message"] ?: "Bienvenue")
+        textSize = 14f
+        setPadding(0, 10, 0, 25)
+    }
+    container.addView(message)
+
+    val checkbox = CheckBox(this).apply {
+        text = wTrad["welcome_checkbox_hide"]
+            ?: "Ne plus afficher le message d’accueil"
+    }
+    container.addView(checkbox)
+
+    AlertDialog.Builder(this)
+        .setTitle(wTrad["welcome_title"] ?: "Bienvenue")
+        .setView(container)
+        .setPositiveButton("OK") { d, _ ->
+            if (checkbox.isChecked) {
+                dbHelper.setPreference(PREF_WELCOME_DISABLED, "1")
+            }
+            d.dismiss()
+        }
+        .setCancelable(false)
+        .show()
+}
+
+private fun initializeMainContent() {
+    logger.d("initializeMainContent: démarrage de l'initialisation du contenu principal")
+    try {
+        setupTabLayoutAndViewPager()
+        logger.d("initializeMainContent: setupTabLayoutAndViewPager exécuté")
+
+        if (isVersionGratuite) {
+            adContainer.visibility = View.VISIBLE
+            logger.d("initializeMainContent: version GRATUITE -> affichage du bandeau pub")
+
+            // --- Initialisation AdMob + chargement bannière de TEST (DIFFÉRÉ) ---
+            // Objectif : ne pas bloquer l'affichage UI au démarrage
+            adContainer.postDelayed({
+                try {
+                    // Initialise le SDK (OK si appelé plusieurs fois)
+                    MobileAds.initialize(this) {}
+
+                    // On crée la bannière et on l'ajoute dans main_ad_container
+                    adView = AdView(this).apply {
+                        // ✅ ID DE TEST fournie par Google (à laisser pour tes tests)
+                        adUnitId = "ca-app-pub-3940256099942544/6300978111"
+                        setAdSize(AdSize.BANNER)
+                    }
+
+                    // On vide le container au cas où puis on ajoute la bannière
+                    adContainer.removeAllViews()
+                    adContainer.addView(adView)
+
+                    // On charge une pub de test
+                    val adRequest = AdRequest.Builder().build()
+                    adView.loadAd(adRequest)
+
+                    logger.d("initializeMainContent: bannière AdMob de test chargée (différée)")
+                } catch (e: Exception) {
+                    logger.e("initializeMainContent: erreur init AdMob (différée)", e)
+                }
+            }, 300) // 300ms : affichage plus rapide de la pub sans bloquer l’UI
+
+        } else {
+            adContainer.visibility = View.GONE
+            logger.d("initializeMainContent: version PAYANTE -> masquage du bandeau pub")
+        }
+
+        logger.d("initializeMainContent: fin normale de l'initialisation")
+    } catch (e: Exception) {
+        logger.e("initializeMainContent: Erreur init content", e)
+    }
+}
+
+private fun setupTabLayoutAndViewPager() {
+    logger.d("setupTabLayoutAndViewPager: démarrage configuration ViewPager + TabLayout")
+
+    val fragmentAdapter = FragmentAdapter(this)
+    viewPager.adapter = fragmentAdapter
+    viewPager.isUserInputEnabled = true
+    viewPager.offscreenPageLimit = 1
+    logger.d("setupTabLayoutAndViewPager: adapter assigné, userInputEnabled=true, offscreenPageLimit=2")
+
+    TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+        val title = getTabTitle(position)
+
+        // Vue personnalisée onglet : texte uniquement
+        val tabView = LinearLayout(this@MainActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+        }
+
+        val textView = TextView(this@MainActivity).apply {
+            text = title
+            gravity = Gravity.CENTER
+            textSize = 12f
+            // 1 ligne pour tous, sauf Habitudes & Volontés (position 3) autorisé à 2 lignes
+            maxLines = if (position == 3) 2 else 1
+            setSingleLine(position != 3)
+        }
+        tabView.addView(textView)
+
+        tab.customView = tabView
+
+        logger.d("setupTabLayoutAndViewPager: onglet position=$position, title=$title")
+    }.attach()
+    logger.d("setupTabLayoutAndViewPager: TabLayoutMediator attaché")
+
+    viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+    override fun onPageSelected(position: Int) {
+        super.onPageSelected(position)
+        logger.d("setupTabLayoutAndViewPager: onPageSelected -> position=$position, updateDateTime()")
+        updateDateTime()
+        updateHeaderResumeVisibility(position)
+    }
+})
+
+logger.d("setupTabLayoutAndViewPager: callback onPageChange enregistré")
+updateHeaderResumeVisibility(viewPager.currentItem)
+}
+
+    private fun updateHeaderResumeVisibility(position: Int) {
+    // 0 = Accueil
+    // 1 = Stats
+    // 2 = Calendrier
+    // 3 = Habitudes & Volontés
+    // 4 = Réglages
+
+    if (position == 0 || position == 1 || position == 2 || position == 3 || position == 4) {
+        headerResumeScroll.visibility = View.VISIBLE
+
+        // Recalcul si le jour OU les catégories actives ont changé
+val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+
+val categoriesJson = dbHelper.getPreference(
+    "categories_actives",
+    """{"cigarette":true,"joint":true,"alcool_global":true,"biere":false,"liqueur":false,"alcool_fort":false}"""
+)
+
+if (headerResumeLastDay != today || headerResumeLastCategoriesJson != categoriesJson) {
+    headerResumeLastCategoriesJson = categoriesJson
+    updateHeaderResumeJour()
+}
+
+    } else {
+        headerResumeScroll.visibility = View.GONE
+    }
+}
+
+    private fun ensureHeaderResumeCache() {
+    if (headerLabelJourCache != null && headerTradStatsCache != null) return
+
+    val tradStats = StatsLangues.getTraductions(configLangue.getLangue())
+    headerTradStatsCache = tradStats
+
+    headerLabelJourCache =
+        tradStats["calculs_periode_jour"]
+            ?: tradStats["btn_jour"]
+            ?: "Jour"
+}
+
+    private fun getCategoriesActivesFromPrefs(): Map<String, Boolean> {
+        return try {
+            val json = dbHelper.getPreference("categories_actives", "{}")
+            val obj = org.json.JSONObject(json)
+    
+            mapOf(
+                DatabaseHelper.TYPE_CIGARETTE to obj.optBoolean("cigarette", true),
+                DatabaseHelper.TYPE_JOINT to obj.optBoolean("joint", true),
+                DatabaseHelper.TYPE_ALCOOL_GLOBAL to obj.optBoolean("alcool_global", true),
+                DatabaseHelper.TYPE_BIERE to obj.optBoolean("biere", false),
+                DatabaseHelper.TYPE_LIQUEUR to obj.optBoolean("liqueur", false),
+                DatabaseHelper.TYPE_ALCOOL_FORT to obj.optBoolean("alcool_fort", false)
+            )
+        } catch (_: Exception) {
+            mapOf(
+                DatabaseHelper.TYPE_CIGARETTE to true,
+                DatabaseHelper.TYPE_JOINT to true,
+                DatabaseHelper.TYPE_ALCOOL_GLOBAL to true,
+                DatabaseHelper.TYPE_BIERE to false,
+                DatabaseHelper.TYPE_LIQUEUR to false,
+                DatabaseHelper.TYPE_ALCOOL_FORT to false
+            )
+        }
+    }
+
+    private fun updateHeaderResumeJour() {
+        try {
+            ensureHeaderResumeCache()
+            headerResumeLabel.text = "${headerLabelJourCache ?: "Jour"} :"
+
+            // Date du jour au format utilisé par la DB
+            val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            headerResumeLastDay = today
+            val consos = dbHelper.getConsommationsJour(today)
+
+            fun getCount(key: String): Int {
+                val value = consos[key]
+                return when (value) {
+                    is Number -> value.toInt()
+                    else -> 0
+                }
+            }
+
+            val cCigarette = getCount("cigarette")
+            val cJoint = getCount("joint")
+            val cAlcoolGlobal = getCount("alcool_global")
+            val cBiere = getCount("biere")
+            val cLiqueur = getCount("liqueur")
+            val cAlcoolFort = getCount("alcool_fort")
+
+            // --- Visibilité + texte selon catégories actives (SOURCE UNIQUE) ---
+            val actives = getCategoriesActivesFromPrefs()
+            
+            fun applyHeaderItem(tv: TextView, enabled: Boolean, text: String) {
+                tv.visibility = if (enabled) View.VISIBLE else View.GONE
+                if (enabled) tv.text = text
+            }
+            
+            applyHeaderItem(
+                headerResumeCigarette,
+                actives[DatabaseHelper.TYPE_CIGARETTE] == true,
+                "🚬 $cCigarette"
+            )
+            
+            applyHeaderItem(
+                headerResumeJoint,
+                actives[DatabaseHelper.TYPE_JOINT] == true,
+                "🌿 $cJoint"
+            )
+            
+            // mini G : ᴳ
+            applyHeaderItem(
+                headerResumeAlcoolGlobal,
+                actives[DatabaseHelper.TYPE_ALCOOL_GLOBAL] == true,
+                "🥃ᴳ $cAlcoolGlobal"
+            )
+            
+            applyHeaderItem(
+                headerResumeBiere,
+                actives[DatabaseHelper.TYPE_BIERE] == true,
+                "🍺 $cBiere"
+            )
+            
+            applyHeaderItem(
+                headerResumeLiqueur,
+                actives[DatabaseHelper.TYPE_LIQUEUR] == true,
+                "🍷 $cLiqueur"
+            )
+            
+            applyHeaderItem(
+                headerResumeAlcoolFort,
+                actives[DatabaseHelper.TYPE_ALCOOL_FORT] == true,
+                "🥃 $cAlcoolFort"
+            )
+
+            logger.d("updateHeaderResumeJour: jour=$today, ciga=$cCigarette, joint=$cJoint, alcoolGlobal=$cAlcoolGlobal, biere=$cBiere, liqueur=$cLiqueur, alcoolFort=$cAlcoolFort")
+        } catch (e: Exception) {
+            logger.e("updateHeaderResumeJour: erreur mise à jour bandeau jour", e)
+        }
+    }
+
+    // Appelable depuis les Fragments (Accueil / Calendrier)
+    fun refreshHeaderResumeJour() {
+        runOnUiThread {
+            updateHeaderResumeJour()
+        }
+    }
+ 
+private fun getTabTitle(position: Int): String {
+    val title = when (position) {
+        0 -> trad["tab_accueil"] ?: "Home"
+        1 -> trad["tab_stats"] ?: "Stats"
+        2 -> trad["tab_calendrier"] ?: "Calendar"
+        3 -> trad["tab_habitudes"] ?: "Habits"
+        4 -> trad["tab_reglages"] ?: "Settings"
+        else -> ""
+    }
+    logger.d("getTabTitle: position=$position -> title='$title'")
+    return title
+}
+
+    private fun handleConsoleDebugClick() {
+    val currentTime = System.currentTimeMillis()
+    logger.d(
+        "handleConsoleDebugClick: click detected, " +
+        "currentTime=$currentTime, lastConsoleClickTime=$lastConsoleClickTime, consoleClickCount=$consoleClickCount"
+    )
+
+    if (currentTime - lastConsoleClickTime > 2000) {
+        logger.d("handleConsoleDebugClick: > 2000 ms since last click -> reset consoleClickCount to 1")
+        consoleClickCount = 1
+    } else {
+        consoleClickCount++
+        logger.d("handleConsoleDebugClick: click within 2000 ms -> consoleClickCount=$consoleClickCount")
+    }
+
+    lastConsoleClickTime = currentTime
+    logger.d("handleConsoleDebugClick: lastConsoleClickTime updated to $lastConsoleClickTime")
+
+    if (consoleClickCount >= 5) {
+        logger.d("handleConsoleDebugClick: 5 clicks detected -> toggle console (consoleVisible=$consoleVisible)")
+        consoleClickCount = 0
+
+        if (consoleVisible) {
+            logger.d("handleConsoleDebugClick: console visible -> dismiss dialog")
+            consoleDialog?.dismiss()
+            consoleVisible = false
+            logger.d("handleConsoleDebugClick: consoleVisible set to false")
+        } else {
+            logger.d("handleConsoleDebugClick: console hidden -> show dialog")
+            showConsoleDebugDialog()
+            consoleVisible = true
+            logger.d("handleConsoleDebugClick: consoleVisible set to true")
+        }
+    }
+}
+    
+    private fun showConsoleDebugDialog() {
+    try {
+        val textView = TextView(this).apply {
+            setBackgroundColor(Color.BLACK)
+            setTextColor(Color.rgb(0, 255, 0))
+            setPadding(20, 20, 20, 20)
+            textSize = 11f
+            typeface = android.graphics.Typeface.MONOSPACE
+
+            val logs = StringBuilder()
+            logs.append("═══════════════════════════════════\n")
+            logs.append("      ${trad["console_title"] ?: "DEBUG CONSOLE"}     \n")
+            logs.append("═══════════════════════════════════\n\n")
+
+            // --- Infos version / device ---
+            val versionText = if (isVersionGratuite) {
+                trad["console_version_free"] ?: "Free"
+            } else {
+                trad["console_version_paid"] ?: "Paid"
+            }
+            logs.append("${trad["console_version"] ?: "Version"}: $versionText\n")
+            logs.append("${trad["console_langue"] ?: "Language"}: ${configLangue.getLangue()}\n")
+            logs.append("${trad["console_date"] ?: "Date"}: ${
+                SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()).format(
+                    Date()
+                )
+            }\n")
+            logs.append("${trad["console_build"] ?: "Build"}: DEBUG\n")
+            logs.append("${trad["console_device"] ?: "Device"}: ${android.os.Build.MODEL}\n")
+            logs.append("${trad["console_android"] ?: "Android"}: ${android.os.Build.VERSION.RELEASE}\n\n")
+
+            // --- État des prefs (âge, avertissement, etc.) ---
+            try {
+                val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                logs.append("--- ${trad["console_app_state"] ?: "App State"} ---\n")
+                logs.append("${trad["console_age_accepted"] ?: "Age accepted"}: ${
+                    prefs.getBoolean(
+                        PREF_AGE_ACCEPTED,
+                        false
+                    )
+                }\n")
+                logs.append("${trad["console_warning_shown"] ?: "Warning shown"}: ${
+                    prefs.getBoolean(
+                        PREF_WARNING_SHOWN,
+                        false
+                    )
+                }\n\n")
+            } catch (e: Exception) {
+                logs.append("${trad["console_error_prefs"] ?: "Error reading prefs"}: ${e.message}\n\n")
+            }
+
+            // --- Logs DB du jour ---
+            logs.append("--- ${trad["console_logs_db"] ?: "Database Logs"} ---\n")
+            try {
+                val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val consos = dbHelper.getConsommationsJour(today)
+                logs.append("${trad["console_consos_jour"] ?: "Daily consumptions"}:\n")
+                if (consos.isEmpty()) {
+                    logs.append("  ${trad["console_no_conso"] ?: "No consumption"}\n")
+                } else {
+                    consos.forEach { (type, count) ->
+                        logs.append("  $type: $count\n")
+                    }
+                }
+            } catch (e: Exception) {
+                logs.append("${trad["console_error_db"] ?: "Error reading DB"}: ${e.message}\n")
+            }
+
+            // --- 🔥 Logs internes centralisés StopAddictLogger ---
+            logs.append("\n--- ${trad["console_internal_logs"] ?: "Internal logs"} ---\n")
+            try {
+                val internalLogs = StopAddictLogger.getAllLogsAsText()
+                if (internalLogs.isBlank()) {
+                    logs.append(
+                        (trad["console_no_internal_logs"]
+                            ?: "Aucun log interne pour le moment.") + "\n"
+                    )
+                } else {
+                    logs.append(internalLogs).append("\n")
+                }
+            } catch (e: Exception) {
+                logs.append("Erreur lecture logs internes: ${e.message}\n")
+            }
+
+            logs.append("\n═══════════════════════════════════\n")
+            logs.append("     ${trad["console_logs_selectable"] ?: "Selectable logs ✓"}        \n")
+            logs.append("═══════════════════════════════════\n")
+
+            text = logs.toString()
+            setTextIsSelectable(true)
+        }
+
+        val scrollView = ScrollView(this).apply {
+            setBackgroundColor(Color.BLACK)
+        }
+        scrollView.addView(textView)
+
+        consoleDialog = AlertDialog.Builder(this)
+            .setView(scrollView)
+            .setPositiveButton(trad["console_btn_close"] ?: "Close") { dialog, _ ->
+                dialog.dismiss()
+                consoleVisible = false
+            }
+            .create()
+
+        consoleDialog?.window?.setBackgroundDrawableResource(android.R.color.black)
+        consoleDialog?.setOnShowListener {
+            consoleDialog?.getButton(AlertDialog.BUTTON_POSITIVE)
+                ?.setTextColor(Color.rgb(0, 255, 0))
+        }
+
+        consoleDialog?.show()
+
+        consoleDialog?.window?.setLayout(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT
+        )
+        consoleDialog?.window?.setGravity(Gravity.TOP)
+
+    } catch (e: Exception) {
+        logger.e("Erreur console", e)
+    }
+}
+
+    fun refreshData() {
+    logger.d("refreshData: called -> updating date/time")
+    updateDateTime()
+    logger.d("refreshData: finished updating date/time")
+}
+
+        fun exportAllLogsFromSettings() {
+        try {
+            val allLogs = StopAddictLogger.getAllLogsAsText()
+            val safeText = if (allLogs.isBlank()) {
+                "Aucun log interne pour le moment."
+            } else {
+                allLogs
+            }
+
+            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, "StopAddict – Logs internes")
+                putExtra(Intent.EXTRA_TEXT, safeText)
+            }
+
+            val chooser = Intent.createChooser(sendIntent, "Exporter les logs")
+            startActivity(chooser)
+
+            logger.d("exportAllLogsFromSettings: partage des logs lancé")
+
+        } catch (e: Exception) {
+            logger.e("exportAllLogsFromSettings: erreur lors de l'export", e)
+            Toast.makeText(this, "Erreur export logs: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+    
+        // --- Cycle de vie ---
+
+    override fun onResume() {
+    super.onResume()
+    logger.d("onResume: activité reprise -> mise à jour de la date/heure")
+    updateDateTime()
+
+    // Bandeau jour : si on revient après un moment (ou changement de jour), on refresh
+    updateHeaderResumeVisibility(viewPager.currentItem)
+}
+
+override fun onPause() {
+    super.onPause()
+    logger.d("onPause: activité mise en pause")
+}
+
+
+override fun onDestroy() {
+    super.onDestroy()
+    logger.d("onDestroy: destruction activité, nettoyage des ressources")
+
+    consoleDialog?.dismiss()
+
+    if (::adView.isInitialized) {
+        adView.destroy()
+    }
+
+    if (::dbHelper.isInitialized) {
+        logger.d("onDestroy: fermeture de la base de données")
+        dbHelper.close()
+    } else {
+        logger.d("onDestroy: dbHelper non initialisé, rien à fermer")
+    }
+}
+}

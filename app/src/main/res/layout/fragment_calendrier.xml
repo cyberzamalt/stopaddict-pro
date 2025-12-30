@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+               <!-- Bandeau profil (progression) -->
+        <LinearLayout
+            android:id="@+id/calendrier_bandeau_profil"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp"
+            android:background="@android:drawable/dialog_holo_light_frame">
+
+            <TextView
+                android:id="@+id/calendrier_profil_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Profil complété à 0%"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:drawablePadding="8dp"
+                android:paddingBottom="8dp" />
+
+            <ProgressBar
+                android:id="@+id/calendrier_profil_progress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/profil_progress_drawable"
+                android:splitTrack="false"/>
+
+            <TextView
+                android:id="@+id/calendrier_txt_profil_restant"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:text="0 champs restants"
+                android:textSize="12sp"
+                android:paddingTop="6dp" />
+
+        </LinearLayout>       
+
+   </LinearLayout>
+</ScrollView>

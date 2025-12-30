@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ÉTAT COCHÉ : carré bleu + check blanc -->
+    <item android:state_checked="true">
+        <layer-list>
+
+            <!-- Fond -->
+            <item>
+                <shape android:shape="rectangle">
+                    <size android:width="22dp" android:height="22dp"/>
+                    <solid android:color="#1E88E5"/>
+                    <corners android:radius="4dp"/>
+                </shape>
+            </item>
+
+            <!-- Check blanc centré -->
+            <item
+                android:drawable="@drawable/ic_check_white"
+                android:gravity="center" />
+
+        </layer-list>
+    </item>
+
+    <!-- ÉTAT DÉCOCHÉ : blanc + bord gris -->
+    <item>
+        <shape android:shape="rectangle">
+            <size android:width="22dp" android:height="22dp"/>
+            <solid android:color="#FFFFFF"/>
+            <stroke android:width="2dp" android:color="#9E9E9E"/>
+            <corners android:radius="4dp"/>
+        </shape>
+    </item>
+
+</selector>
