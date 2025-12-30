@@ -221,10 +221,17 @@ class AccueilFragment : Fragment() {
             containerLiqueurs = view.findViewById(R.id.accueil_container_liqueurs)
             containerAlcoolFort = view.findViewById(R.id.accueil_container_alcool_fort)
 
-                        // Bouton version sans pub
+            // Bouton version sans pub (accueil) -> MASQUÉ dans la version free
             btnPremiumAccueil = view.findViewById(R.id.accueil_btn_premium)
+            
+            // Optionnel : on garde le texte au cas où tu le réactives plus tard
             val tradReglages = ReglagesLangues.getTraductions(configLangue.getLangue())
             btnPremiumAccueil.text = tradReglages["btn_premium"] ?: "Version sans publicité"
+            
+            // On le cache complètement
+            btnPremiumAccueil.visibility = View.GONE
+            btnPremiumAccueil.isEnabled = false
+            btnPremiumAccueil.setOnClickListener(null)
 
             // Ajout des icônes (emoji) comme dans le header et Stats – sans impacter la traduction
             checkCigarettes.text   = "🚬 " + (trad["label_cigarettes"] ?: "Cigarettes")
@@ -379,7 +386,7 @@ class AccueilFragment : Fragment() {
         }
 
         // Bouton version sans pub (accueil)
-        btnPremiumAccueil.setOnClickListener { ouvrirVersionPremium() }
+        // btnPremiumAccueil.setOnClickListener { ouvrirVersionPremium() }
 
         logger.d( "Listeners configurés avec succès")
     } catch (e: Exception) {
