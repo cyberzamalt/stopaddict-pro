@@ -139,6 +139,9 @@ class AccueilFragment : Fragment() {
 
             // Initialisation des vues
             initViews(view)
+            
+            val isVersionGratuite = (activity as? MainActivity)?.isVersionGratuite ?: true
+            btnPremiumAccueil.visibility = if (isVersionGratuite) View.VISIBLE else View.GONE
 
             // Chargement catégories actives
             loadCategoriesActives()
