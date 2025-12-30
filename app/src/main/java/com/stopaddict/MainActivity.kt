@@ -435,7 +435,7 @@ private fun initializeMainContent() {
         logger.d("initializeMainContent: setupTabLayoutAndViewPager exécuté")
 
         if (isVersionGratuite) {
-            adContainer.visibility = View.VISIBLE
+            adContainer.visibility = View.GONE
             logger.d("initializeMainContent: version GRATUITE -> affichage du bandeau pub")
 
             // --- Initialisation AdMob + chargement bannière de TEST (DIFFÉRÉ) ---
