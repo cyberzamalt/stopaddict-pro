@@ -17,10 +17,38 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // ✅ AJOUT : signature "release" via variables d'environnement (GitHub Actions)
+    signingConfigs {
+        release {
+            def ksPath = System.getenv("UPLOAD_KEYSTORE_PATH")
+            def ksPass = System.getenv("UPLOAD_KEYSTORE_PASSWORD")
+            def keyAliasEnv = System.getenv("UPLOAD_KEY_ALIAS")
+            def keyPass = System.getenv("UPLOAD_KEY_PASSWORD")
+
+            // On ne configure la signature que si tout est présent (évite de casser le build local)
+            if (ksPath != null && ksPass != null && keyAliasEnv != null && keyPass != null) {
+                storeFile file(ksPath)
+                storePassword ksPass
+                keyAlias keyAliasEnv
+                keyPassword keyPass
+            } else {
+                // Pas d’erreur ici : en local tu peux build debug sans secrets
+                // et en CI, si ça manque, le bundleRelease ne sera pas signé (et Play refusera).
+                println("WARNING: Release signing env vars missing. Release bundle may be unsigned.")
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            // ✅ AJOUT : applique la signature release
+            signingConfig signingConfigs.release
+        }
+        debug {
+            // rien
         }
     }
 
