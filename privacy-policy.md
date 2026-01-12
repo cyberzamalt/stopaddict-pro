@@ -31,4 +31,4 @@ Les données restent sous le contrôle exclusif de l’utilisateur sur son appar
 
 ## Contact
 Pour toute question :
-stopaddict.app@gmail.com
+stopmauvaiseshabitudes@gmail.com
